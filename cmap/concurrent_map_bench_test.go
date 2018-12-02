@@ -265,6 +265,7 @@ func BenchmarkMultiGetSetDifferentSyncMap(b *testing.B) {
 		<-finished
 	}
 }
+
 // get set 已经存在的一些 key（分段锁）
 func benchmarkMultiGetSetBlock(b *testing.B) {
 	m := New()
@@ -327,16 +328,16 @@ func BenchmarkMultiGetSetBlockSyncMap(b *testing.B) {
 
 func GetSet(m ConcurrentMap, finished chan struct{}) (set func(key, value string), get func(key, value string)) {
 	return func(key, value string) {
-		for i := 0; i < 10; i++ {
-			m.Get(key)
+			for i := 0; i < 10; i++ {
+				m.Get(key)
+			}
+			finished <- struct{}{}
+		}, func(key, value string) {
+			for i := 0; i < 10; i++ {
+				m.Set(key, value)
+			}
+			finished <- struct{}{}
 		}
-		finished <- struct{}{}
-	}, func(key, value string) {
-		for i := 0; i < 10; i++ {
-			m.Set(key, value)
-		}
-		finished <- struct{}{}
-	}
 }
 
 func runWithShards(bench func(b *testing.B), b *testing.B, shardsCount int) {
